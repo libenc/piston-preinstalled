@@ -108,6 +108,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{fromJson(needs.get-specs-matrix.outputs.matrix)}}
+    env:
+      BUILDX_NO_DEFAULT_ATTESTATIONS: 1
     steps:
       - name: Check disk space
         run: df -h
