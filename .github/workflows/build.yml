@@ -158,41 +158,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Build and push to GHCR
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: .
-      #     push: true
-      #     tags: |
-      #       ghcr.io/${{ github.repository }}:${{ matrix.spec}}
-      #       ${{ steps.set-env.outputs.imgfullname }}
-
-      # https://docs.docker.com/build/exporters/image-registry/
-      - name: Build and push to GHCR
+      - name: Build image cache
         run: |
-          df -h
-          docker buildx build \
-            --output type=registry,\"name=ghcr.io/${{ github.repository }}:${{ matrix.spec}},${{ steps.set-env.outputs.imgfullname }}\",push=true,compression=zstd,compression-level=22,force-compression=true,store=true . 
+          docker buildx build -t ghcr.io/${{ github.repository }}:${{ matrix.spec}} \
+            -t ${{ steps.set-env.outputs.imgfullname }} \
+            --output type=cacheonly . 
           docker images
+          docker buildx du --verbose
           df -h
 
-      # # Currently push and load cannot be used together, check https://github.com/docker/build-push-action/issues/1056
-      # # Should produce a same result with cache except some metadata like digest
-      # - name: Export image to Docker
-      #   uses: docker/build-push-action@v5
-      #   timeout-minutes: 300
-      #   with:
-      #     context: .
-      #     # load: true
-      #     outputs: type=docker,dest=/var/lib/docker/build-output/${{ steps.set-env.outputs.imgtagname }}.tar
-      #     tags: |
-      #       ghcr.io/${{ github.repository }}:${{ matrix.spec}}
-      #       ${{ steps.set-env.outputs.imgfullname }}
-
-      # https://docs.docker.com/build/exporters/oci-docker/
-      - name: Export image to local
-        timeout-minutes: 300
+      - name: Push to GHCR
         run: |
+          docker buildx build -t ghcr.io/${{ github.repository }}:${{ matrix.spec}} \
+            -t ${{ steps.set-env.outputs.imgfullname }} \
+            --output type=registry,compression=zstd,compression-level=22,force-compression=true,store=false .
+          docker images
+          docker buildx du --verbose
+          df -h
+
+      - name: Export to tarball
+        id: export-tarball
+        continue-on-error: true
+        run: |
+          echo "run-status=started" >> $GITHUB_OUTPUT
           docker buildx build -t ghcr.io/${{ github.repository }}:${{ matrix.spec}} \
             -t ${{ steps.set-env.outputs.imgfullname }} \
             --output type=docker,compression=zstd,compression-level=22,force-compression=true,dest=- . | \
@@ -203,10 +191,14 @@ jobs:
             mv "${split_files[0]}" "${{ steps.set-env.outputs.imgtagname }}.tar"
           fi
           sha256sum ${{ steps.set-env.outputs.imgtagname }}.tar* > ${{ steps.set-env.outputs.imgtagname }}.SHA256SUMS
+          docker images
+          docker buildx du --verbose
           ls -lah
           df -h
+          echo "run-status=success" >> $GITHUB_OUTPUT
 
       - name: Inspect image
+        continue-on-error: true
         run: |
           cd /var/lib/docker/build-output
           docker manifest inspect ${{ steps.set-env.outputs.imgfullname }} -v > ${{ steps.set-env.outputs.imgtagname }}.manifest.json
@@ -214,6 +206,7 @@ jobs:
 
       - name: Upload Release
         timeout-minutes: 60
+        if: ${{ steps.export-tarball.outputs.run-status == 'success'}}
         uses: svenstaro/upload-release-action@v2
         with:
           file_glob: true
