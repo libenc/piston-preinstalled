@@ -2,7 +2,8 @@ name: Build and Push to GHCR
 
 on:
   schedule:
-    - cron: "0 6 * * 5" # at 06:00 on Friday
+    - cron: "15 4 5 * *" # at 04:15 on 5th day of the month
+    - cron: "40 2 25 * *" # at 02:40 on 25th day of the month
   workflow_dispatch:
     inputs:
       force-renew:
@@ -115,7 +116,7 @@ jobs:
         run: df -h
 
       - name: Maximize build space
-        uses: easimon/maximize-build-space@master
+        uses: libenc/maximize-build-space@add-btrfs-support
         with:
           build-mount-path: /var/lib/docker/
           remove-dotnet: "true"
@@ -123,6 +124,10 @@ jobs:
           remove-haskell: "true"
           remove-codeql: "true"
           remove-docker-images: "true"
+          use-btrfs: "true"
+          btrfs-compression-algorithm: "zstd"
+          btrfs-compression-level: "9"
+          btrfs-force-compression: "false"
 
       - name: Restart docker
         run: |
@@ -216,3 +221,24 @@ jobs:
             Triggered by: `${{ github.event_name }}`
             Force renew: `${{ github.event.inputs.force-renew }}`
           overwrite: true
+
+      - name: Debug
+        if: ${{ always() }}
+        run: |
+          ls -lah /var/lib/docker/build-output
+          du -sh /var/lib/docker/build-output
+          du -sh /*.img /mnt/*.img
+          sudo df -h
+          sudo lsblk
+          sudo lvdisplay
+          sudo lvs
+          sudo pvs
+          sudo vgs
+          sudo findmnt
+          docker images
+          docker buildx du --verbose
+          sudo btrfs filesystem df /var/lib/docker
+          sudo btrfs filesystem show /var/lib/docker
+          sudo btrfs filesystem usage /var/lib/docker
+          sudo btrfs subvolume list /var/lib/docker
+          sudo btrfs subvolume show /var/lib/docker
