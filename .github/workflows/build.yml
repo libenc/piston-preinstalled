@@ -242,3 +242,6 @@ jobs:
           sudo btrfs filesystem usage /var/lib/docker
           sudo btrfs subvolume list /var/lib/docker
           sudo btrfs subvolume show /var/lib/docker
+          sudo sync
+          sudo btrfs scrub -B start
+          sudo btrfs check --readonly --force --check-data-csum /dev/mapper/buildvg-buildlv
