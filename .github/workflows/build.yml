@@ -2,7 +2,7 @@ name: Build and Push to GHCR
 
 on:
   schedule:
-    - cron: "15 4 5 * *" # at 04:15 on 5th day of the month
+    - cron: "15 4 10 * *" # at 04:15 on 10th day of the month
     - cron: "40 2 25 * *" # at 02:40 on 25th day of the month
   workflow_dispatch:
     inputs:
