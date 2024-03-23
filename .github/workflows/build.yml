@@ -20,6 +20,8 @@ on:
 jobs:
   check-release:
     runs-on: ubuntu-latest
+    outputs:
+      renew: ${{ steps.compare.outputs.renew }}
     steps:
       - name: Get previous runtime index
         uses: dawidd6/action-download-artifact@v3
@@ -85,7 +87,7 @@ jobs:
 
   get-specs-matrix:
     needs: check-release
-    if: ${{ needs.check-release.outputs.renew == 'true' || github.event.inputs.force-renew }}
+    if: needs.check-release.outputs.renew == 'true' || github.event.inputs.force-renew == 'true'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.specs-matrix }}
@@ -105,7 +107,7 @@ jobs:
     needs:
       - check-release
       - get-specs-matrix
-    if: ${{ needs.check-release.outputs.renew == 'true' || github.event.inputs.force-renew }}
+    if: needs.check-release.outputs.renew == 'true' || github.event.inputs.force-renew == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{fromJson(needs.get-specs-matrix.outputs.matrix)}}
@@ -243,5 +245,5 @@ jobs:
           sudo btrfs subvolume list /var/lib/docker
           sudo btrfs subvolume show /var/lib/docker
           sudo sync
-          sudo btrfs scrub -B start
+          sudo btrfs scrub start -B /var/lib/docker/
           sudo btrfs check --readonly --force --check-data-csum /dev/mapper/buildvg-buildlv
