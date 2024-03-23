@@ -85,7 +85,7 @@ jobs:
 
   get-specs-matrix:
     needs: check-release
-    if: steps.check-release.outputs.renew == 'true' || ${{ github.event.inputs.force-renew }}
+    if: ${{ needs.check-release.outputs.renew == 'true' || github.event.inputs.force-renew }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.specs-matrix }}
@@ -105,7 +105,7 @@ jobs:
     needs:
       - check-release
       - get-specs-matrix
-    if: steps.check-release.outputs.renew == 'true' || ${{ github.event.inputs.force-renew }}
+    if: ${{ needs.check-release.outputs.renew == 'true' || github.event.inputs.force-renew }}
     runs-on: ubuntu-latest
     strategy:
       matrix: ${{fromJson(needs.get-specs-matrix.outputs.matrix)}}
