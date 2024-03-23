@@ -1,0 +1,12 @@
+bash *
+deno *
+gawk *
+gcc *
+go *
+java *
+lua *
+mono *
+pwsh *
+python *
+rust *
+sqlite3 *
