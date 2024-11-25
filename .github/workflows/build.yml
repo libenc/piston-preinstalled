@@ -24,7 +24,7 @@ jobs:
       renew: ${{ steps.compare.outputs.renew }}
     steps:
       - name: Get previous runtime index
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v6
         with:
           name: previous-index
           # check_artifacts: true
@@ -33,7 +33,7 @@ jobs:
           allow_forks: false
 
       - name: Get previous image digest
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v6
         with:
           name: previous-digest
           # check_artifacts: true
